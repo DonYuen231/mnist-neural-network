@@ -13,7 +13,7 @@ class DenseLayer:
         rng (np.random.Generator): Shared random generator used to initialize weights.
         """
 
-        self.weights = rng.standard_normal((input_dim, output_dim)) * 0.01
+        self.weights = rng.standard_normal((input_dim, output_dim)) * np.sqrt(2. / input_dim)  # He initialization
         self.biases = np.zeros((1, output_dim))
         self.activation = activation
 

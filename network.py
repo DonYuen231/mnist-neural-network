@@ -1,5 +1,5 @@
 from layers import DenseLayer
-from neuron import relu
+import neuron
 import numpy as np
 class NeuralNetwork:
     def __init__(self, layer_sizes, seed=42):
@@ -7,7 +7,7 @@ class NeuralNetwork:
         layers = []
         for i in range(len(layer_sizes) - 1):
             is_last_layer = (i == len(layer_sizes) - 2)
-            activation_function = None if is_last_layer else relu
+            activation_function = None if is_last_layer else neuron.relu
             layers.append(DenseLayer(layer_sizes[i], layer_sizes[i + 1], rng, activation_function))
         self.layers = layers
     def forward(self, X):
@@ -23,6 +23,8 @@ class NeuralNetwork:
         for layer in self.layers:
             X = layer.forward(X)
         return X
+
+
 
 if __name__ == "__main__":
     # Example usage
@@ -43,7 +45,7 @@ if __name__ == "__main__":
     print("layer weight shapes OK")
 
     # ReLU on hidden layers, no activation (raw logits) on the output layer
-    assert all(layer.activation is relu for layer in nn.layers[:-1]), "hidden layer missing relu"
+    assert all(layer.activation is neuron.relu for layer in nn.layers[:-1]), "hidden layer missing relu"
     assert nn.layers[-1].activation is None, "output layer should have no activation"
     print("activations OK (relu hidden, None output)")
 

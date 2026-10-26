@@ -85,6 +85,19 @@ def neuron_calculate(inputs, weights, bias):
     # Apply the activation function
     return sigmoid(weighted_sum)
 
+def softmax(z):
+    """
+    Apply the softmax activation function.
+
+    Parameters:
+    z (numpy.ndarray): The input array.
+
+    Returns:
+    numpy.ndarray: The output of the softmax function.
+    """
+    z = np.asarray(z, dtype=float)
+    exp_z = np.exp(z - np.max(z, axis=1, keepdims=True))  # Subtract max for numerical stability
+    return exp_z / np.sum(exp_z, axis=1, keepdims=True)
 
 if __name__ == "__main__":
     # Hand-computed check:
@@ -119,5 +132,30 @@ if __name__ == "__main__":
     relu_d_vals = relu_derivative(np.array([-5, 0, 5]))
     assert np.array_equal(relu_d_vals, [0, 0, 1]), f"got {relu_d_vals}"
     print(f"relu_derivative([-5, 0, 5]): {relu_d_vals} OK")
+
+    # softmax hand-computed: equal logits -> equal probabilities
+    sm_equal = softmax([[0, 0]])
+    assert np.allclose(sm_equal, [[0.5, 0.5]]), f"got {sm_equal}"
+    print(f"softmax([[0, 0]]): {sm_equal} OK")
+
+    # softmax hand-computed: e^1, e^2, e^3 over their sum ~= [0.0900, 0.2447, 0.6652]
+    sm_123 = softmax([[1, 2, 3]])
+    assert np.allclose(sm_123, [[0.09003057, 0.24472847, 0.66524096]]), f"got {sm_123}"
+    print(f"softmax([[1, 2, 3]]): {sm_123.round(4)} OK")
+
+    # Stability: huge logits would overflow np.exp without the max subtraction
+    sm_big = softmax([[1000, 1000]])
+    assert np.allclose(sm_big, [[0.5, 0.5]]), f"got {sm_big}"
+    print(f"softmax([[1000, 1000]]): {sm_big} OK")
+
+    # Batch of random logits: every row is a valid probability distribution,
+    # and the most likely class is unchanged (softmax preserves order)
+    logits = np.random.default_rng(0).standard_normal((5, 10)) * 3
+    probs = softmax(logits)
+    assert probs.shape == (5, 10), f"got shape {probs.shape}"
+    assert np.allclose(probs.sum(axis=1), 1), f"row sums {probs.sum(axis=1)}"
+    assert (probs > 0).all(), "softmax produced a non-positive probability"
+    assert np.array_equal(probs.argmax(axis=1), logits.argmax(axis=1)), "argmax changed"
+    print("softmax batch (5, 10): rows sum to 1, all > 0, argmax preserved OK")
 
     print("\nAll neuron.py checks passed.")

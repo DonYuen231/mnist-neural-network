@@ -1,4 +1,5 @@
 import numpy as np
+import neuron
 
 def cross_entropy_loss(logits, y):
     """
@@ -19,8 +20,24 @@ def cross_entropy_loss(logits, y):
     loss = -np.mean(correct_log_probs)
     return loss
 
+def cross_entropy_grad(logits, y):
+    """
+    Compute the gradient of the cross-entropy loss with respect to the logits.
+
+    Parameters:
+    logits (numpy.ndarray): Raw scores from the network, shape (B, C).
+    y (numpy.ndarray): Integer class labels, shape (B,).
+
+    Returns:
+    numpy.ndarray: Gradient of the loss with respect to the logits, shape (B, C).
+    """
+    probs = neuron.softmax(logits)  # softmax returns a new array, so logits is untouched
+    B = logits.shape[0]
+    probs[np.arange(B), y] -= 1     # probs - onehot: subtract 1 only at each correct label
+    grad = probs / B                # loss is a mean over the batch, so scale by 1/B
+    return grad
+
 if __name__ == "__main__":
-    from neuron import softmax
 
     # Hand-computed worked example (see the step-by-step table):
     # row 0: log_probs [-0.408, -1.408, -2.408], label 0 -> -0.408
@@ -52,9 +69,32 @@ if __name__ == "__main__":
     B = 8
     logits_rand = rng.standard_normal((B, 10)) * 3
     y_rand = rng.integers(0, 10, size=B)
-    naive = -np.mean(np.log(softmax(logits_rand)[np.arange(B), y_rand]))
+    naive = -np.mean(np.log(neuron.softmax(logits_rand)[np.arange(B), y_rand]))
     ours = cross_entropy_loss(logits_rand, y_rand)
     assert np.isclose(ours, naive), f"log-softmax {ours} != naive {naive}"
     print(f"matches naive softmax -> log: {ours:.6f} vs {naive:.6f} OK")
+
+    # Gradient, worked example: logits [2, 1, 0], label 0
+    # probs [0.665, 0.245, 0.090] - onehot [1, 0, 0] = [-0.335, 0.245, 0.090], / B (B = 1)
+    grad = cross_entropy_grad(np.array([[2.0, 1.0, 0.0]]), np.array([0]))
+    assert np.allclose(grad, [[-0.33476, 0.24473, 0.09003]], atol=1e-4), f"got {grad}"
+    print(f"grad worked example: {grad.round(3)} OK")
+
+    # Shape matches logits, and every row sums to 0 (probs sum to 1, onehot sums to 1)
+    grad_rand = cross_entropy_grad(logits_rand, y_rand)
+    assert grad_rand.shape == logits_rand.shape, f"got shape {grad_rand.shape}"
+    assert np.allclose(grad_rand.sum(axis=1), 0), f"row sums {grad_rand.sum(axis=1)}"
+    print("grad shape matches logits, rows sum to 0 OK")
+
+    # Batch scaling: the same image repeated B times gives each row 1/B of the B=1 gradient
+    grad_batch = cross_entropy_grad(np.array([[2.0, 1.0, 0.0]] * 4), np.array([0] * 4))
+    assert np.allclose(grad_batch, grad / 4), "batch gradient not scaled by 1/B"
+    print("grad scaled by 1/B OK")
+
+    # The function must not modify the caller's logits
+    logits_copy = logits_rand.copy()
+    cross_entropy_grad(logits_rand, y_rand)
+    assert np.array_equal(logits_rand, logits_copy), "grad function modified its input"
+    print("grad leaves logits unchanged OK")
 
     print("\nAll losses.py checks passed.")

@@ -4,6 +4,18 @@ import numpy as np
 from losses import cross_entropy_grad
 class NeuralNetwork:
     def __init__(self, layer_sizes, seed=42):
+        """
+        Build a stack of DenseLayers from a list of layer sizes.
+
+        Every layer except the last uses ReLU. The last layer has no activation,
+        so it outputs raw logits (softmax is applied inside the loss).
+
+        Parameters:
+        layer_sizes (list of int): Size of each layer, input first, e.g.
+            [784, 128, 64, 10] builds 3 layers: 784->128, 128->64, 64->10.
+        seed (int): Seed for the one shared random generator, so the same seed
+            always gives the same starting weights.
+        """
         rng = np.random.default_rng(seed)
         layers = []
         for i in range(len(layer_sizes) - 1):

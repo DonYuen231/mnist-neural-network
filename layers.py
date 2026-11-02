@@ -1,5 +1,5 @@
 import numpy as np
-from neuron import relu
+import neuron
 
 class DenseLayer:
     def __init__(self, input_dim, output_dim, rng, activation=None):
@@ -45,23 +45,17 @@ class DenseLayer:
         Returns:
         numpy.ndarray: Gradient of the loss with respect to the input of this layer.
         """
-        # TODO (Part 5): DRAFT ONLY - not yet correct or tested. Do not call.
-        #  - self.activation(self.Z, derivative=True) fails: relu/sigmoid take no
-        #    `derivative` argument (derivatives are separate functions in neuron.py)
-        #  - dividing dW/db by m double-counts the 1/B already applied in the
-        #    output layer's dZ = (y_hat - y) / B
-        #  - verify against gradient checking (Part 6) once rewritten
-        if self.activation is not None:
-            dZ = dA * self.activation(self.Z, derivative=True)
-        else:
+        if self.activation is None:
             dZ = dA
-
-        m = self.A_inputs.shape[0]  # Number of examples
-        self.dW = np.dot(self.A_inputs.T, dZ) / m
-        self.db = np.sum(dZ, axis=0, keepdims=True) / m
-        dA_prev = np.dot(dZ, self.weights.T)
-
-        return dA_prev
+        elif self.activation == neuron.relu:
+            dZ = np.multiply(neuron.relu_derivative(self.Z),dA)
+        else:
+            # Fail loudly instead of a confusing UnboundLocalError on dZ below
+            raise ValueError(f"no derivative known for activation {self.activation}")
+        self.grad_weights = np.dot(self.A_inputs.T,dZ)
+        self.grad_biases = np.sum(dZ, axis=0, keepdims=True)
+        self.grad_A_inputs = np.dot(dZ,self.weights.T)
+        return self.grad_A_inputs
 
 if __name__ == "__main__":
     # One shared generator for the whole test: reproducible, but each layer
@@ -69,8 +63,8 @@ if __name__ == "__main__":
     rng = np.random.default_rng(seed=42)
     X = rng.random((5, 784))  # fake batch: 5 "images", 784 pixels each
 
-    l1 = DenseLayer(784, 128, rng, relu)
-    l2 = DenseLayer(128, 128, rng, relu)
+    l1 = DenseLayer(784, 128, rng, neuron.relu)
+    l2 = DenseLayer(128, 128, rng, neuron.relu)
 
     # Shape check: (5, 784) @ (784, 128) -> (5, 128)
     out1 = l1.forward(X)
@@ -100,5 +94,35 @@ if __name__ == "__main__":
     logits = l3.forward(out2)
     assert np.array_equal(logits, l3.Z), "activation=None should return Z unchanged"
     print(f"no-activation layer returns Z unchanged, shape {logits.shape} OK")
+
+    # backward(): every gradient has the same shape as the thing it belongs to
+    dA_in = l1.backward(rng.random((5, 128)))
+    assert l1.grad_weights.shape == l1.weights.shape, f"got {l1.grad_weights.shape}"
+    assert l1.grad_biases.shape == l1.biases.shape, f"got {l1.grad_biases.shape}"
+    assert dA_in.shape == X.shape, f"got {dA_in.shape}"
+    print("backward() gradient shapes match weights, biases, inputs OK")
+
+    # backward() hand-computed: 2 inputs -> 1 neuron, no activation, 1 image
+    # grad_weights = A_inputs.T @ dZ = [[1], [4]] * 0.5 = [[0.5], [2.0]]
+    # grad_biases  = sum of dZ over batch          = [[0.5]]
+    # grad_inputs  = dZ @ weights.T = 0.5 * [2, 3]   = [[1.0, 1.5]]
+    hand = DenseLayer(2, 1, rng)
+    hand.weights = np.array([[2.0], [3.0]])
+    hand.forward(np.array([[1.0, 4.0]]))
+    grad_in = hand.backward(np.array([[0.5]]))
+    assert np.allclose(hand.grad_weights, [[0.5], [2.0]]), f"got {hand.grad_weights}"
+    assert np.allclose(hand.grad_biases, [[0.5]]), f"got {hand.grad_biases}"
+    assert np.allclose(grad_in, [[1.0, 1.5]]), f"got {grad_in}"
+    print("backward() hand-computed example OK")
+
+    # ReLU blocks gradient for "off" neurons: inputs [1, 2] give Z = [3, -3],
+    # so neuron 1 (Z < 0) has slope 0 and gets an all-zero grad_weights column
+    gate = DenseLayer(2, 2, rng, neuron.relu)
+    gate.weights = np.array([[1.0, -1.0], [1.0, -1.0]])
+    gate.forward(np.array([[1.0, 2.0]]))
+    gate.backward(np.array([[1.0, 1.0]]))
+    assert np.allclose(gate.grad_weights, [[1.0, 0.0], [2.0, 0.0]]), f"got {gate.grad_weights}"
+    assert np.allclose(gate.grad_biases, [[1.0, 0.0]]), f"got {gate.grad_biases}"
+    print("backward() ReLU passes no gradient through neurons with Z <= 0 OK")
 
     print("\nAll layers.py checks passed.")

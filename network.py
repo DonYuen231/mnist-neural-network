@@ -1,6 +1,7 @@
 from layers import DenseLayer
 import neuron
 import numpy as np
+from losses import cross_entropy_grad
 class NeuralNetwork:
     def __init__(self, layer_sizes, seed=42):
         rng = np.random.default_rng(seed)
@@ -23,6 +24,28 @@ class NeuralNetwork:
         for layer in self.layers:
             X = layer.forward(X)
         return X
+    def backward(self, logits, Y):
+        """
+        Perform the backward pass (backpropagation) through the entire network.
+
+        Starts from the cross-entropy gradient at the output and passes it back
+        through each layer in reverse order. Each layer stores its own
+        grad_weights and grad_biases for the update step.
+
+        Must be called right after forward() on the same batch: each layer's
+        backward() uses the A_inputs and Z cached by the most recent forward().
+
+        Parameters:
+        logits (numpy.ndarray): Output of forward(), shape (B, C).
+        Y (numpy.ndarray): Integer class labels, shape (B,).
+
+        Returns:
+        None. Gradients are stored on each layer.
+        """
+        grads = cross_entropy_grad(logits, Y)
+        for layer in reversed(self.layers):
+            grads = layer.backward(grads)
+
 
 
 
@@ -52,5 +75,31 @@ if __name__ == "__main__":
     # Full forward pass: (5, 784) -> (5, 10), one score per digit per image
     assert output.shape == (5, 10), f"expected (5, 10), got {output.shape}"
     print(f"output shape: {output.shape} OK")
+
+    # backward(): every layer gets gradients shaped like its own weights/biases
+    y = np.array([3, 1, 4, 1, 5])  # fake labels, one per image
+    nn.backward(output, y)
+    for i, layer in enumerate(nn.layers):
+        assert layer.grad_weights.shape == layer.weights.shape, f"layer {i}: {layer.grad_weights.shape}"
+        assert layer.grad_biases.shape == layer.biases.shape, f"layer {i}: {layer.grad_biases.shape}"
+        assert np.all(np.isfinite(layer.grad_weights)), f"layer {i} has non-finite gradients"
+    print("backward() gradient shapes match every layer OK")
+
+    # The output layer has no activation, so its bias gradient is just the
+    # loss gradient summed over the batch (checks the chain starts correctly)
+    from losses import cross_entropy_loss
+    expected_db = cross_entropy_grad(output, y).sum(axis=0, keepdims=True)
+    assert np.allclose(nn.layers[-1].grad_biases, expected_db), "output layer grad_biases wrong"
+    print("output layer receives cross_entropy_grad OK")
+
+    # End-to-end direction check: one small step against the gradient should
+    # lower the loss. (Part 6 gradient checking will verify the exact values.)
+    loss_before = cross_entropy_loss(output, y)
+    for layer in nn.layers:
+        layer.weights -= 0.01 * layer.grad_weights
+        layer.biases -= 0.01 * layer.grad_biases
+    loss_after = cross_entropy_loss(nn.forward(X), y)
+    assert loss_after < loss_before, f"loss went up: {loss_before:.4f} -> {loss_after:.4f}"
+    print(f"one gradient step lowers loss: {loss_before:.4f} -> {loss_after:.4f} OK")
 
     print("\nAll network.py checks passed.")

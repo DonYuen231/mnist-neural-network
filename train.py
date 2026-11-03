@@ -55,7 +55,8 @@ def accuracy(nn, X, Y):
     return np.mean(predictions == Y)
 
 
-def train(nn, X_train, Y_train, X_val, Y_val, epochs, batch_size, learning_rate, seed=0):
+def train(nn, X_train, Y_train, X_val, Y_val, epochs, batch_size, learning_rate, seed=0,
+          verbose=True):
     """
     Train the network for several epochs, reshuffling the data each epoch.
 
@@ -73,6 +74,7 @@ def train(nn, X_train, Y_train, X_val, Y_val, epochs, batch_size, learning_rate,
     learning_rate (float): Step size for each update.
     seed (int): Seed for the shuffling. The rng is created once, so each
         epoch gets a different order but the whole run is reproducible.
+    verbose (bool): If True, print a line after every epoch.
 
     Returns:
     tuple of lists, one entry per epoch: (losses, train_accs, val_accs)
@@ -91,8 +93,9 @@ def train(nn, X_train, Y_train, X_val, Y_val, epochs, batch_size, learning_rate,
         losses.append(avg_loss)
         train_accs.append(train_acc)
         val_accs.append(val_acc)
-        print(f"Epoch {epoch + 1}: loss {avg_loss:.4f}, "
-              f"train acc {train_acc:.2%}, val acc {val_acc:.2%}")
+        if verbose:
+            print(f"Epoch {epoch + 1}: loss {avg_loss:.4f}, "
+                  f"train acc {train_acc:.2%}, val acc {val_acc:.2%}")
     return losses, train_accs, val_accs
 
 

@@ -19,6 +19,8 @@ import network
 from train import train
 
 # Part 7 baseline. Each sweep changes one of these and keeps the others.
+# The batch size sweep found batch 16 works better, so train.py now uses 16.
+# These stay at 64 so the documented sweep results can be reproduced exactly.
 BASE_LR = 0.1
 BASE_SIZES = [784, 128, 64, 10]
 BASE_BATCH = 64
@@ -115,5 +117,23 @@ if __name__ == "__main__":
         "Hidden width sweep (lr 0.1, batch 64, 5 epochs)", "sizes",
         [(str(sizes), baseline(layer_sizes=sizes))
          for sizes in [[784, 32, 10], [784, 128, 64, 10], [784, 256, 128, 10]]],
+        datasets,
+    )
+
+    # Bigger batches mean fewer updates per epoch (about 55,000 / batch_size),
+    # but each update averages more images, so it points more accurately downhill.
+    run_sweep(
+        "Batch size sweep (sizes [784, 128, 64, 10], lr 0.1, 5 epochs)", "batch size",
+        [(str(bs), baseline(batch_size=bs)) for bs in [16, 64, 256]],
+        datasets,
+    )
+
+    # Batch 16 won above, but it also took ~1.6x longer. Give batch 64 the same
+    # time budget (8 epochs is about as long as 5 epochs of batch 16) to see
+    # whether batch 16 is better per second, or just ahead because it trained longer.
+    run_sweep(
+        "Equal time budget (sizes [784, 128, 64, 10], lr 0.1)", "batch, epochs",
+        [("16, 5 epochs", baseline(batch_size=16, epochs=5)),
+         ("64, 8 epochs", baseline(batch_size=64, epochs=8))],
         datasets,
     )

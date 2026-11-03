@@ -12,7 +12,7 @@ A handwritten digit classifier built with only Python and NumPy. No machine lear
 - Backpropagation through every layer, derived by hand with the chain rule (`layers.py`, `network.py`)
 - Gradient checking with centered finite differences: backprop matches the numerical gradients to a relative error of about 1e-9 (`gradient_check.py`)
 - Mini-batch SGD training with per-epoch shuffling, tracking loss and train/validation accuracy (`train.py`)
-- Hyperparameter sweeps over learning rate and hidden layer width, each repeated across 3 seeds (`experiments.py`)
+- Hyperparameter sweeps over learning rate, hidden layer width, and batch size, each repeated across 3 seeds (`experiments.py`)
 
 ## Results so far
 
@@ -54,13 +54,32 @@ Too small a learning rate is just slow: 0.001 is still improving after 5 epochs.
 
 The largest network scores 0.18% higher on average, but its range overlaps the baseline's, and it takes twice as long to train. The gap between train and validation accuracy grows with network size, which is consistent with bigger networks starting to memorize the training set. I kept [784, 128, 64, 10].
 
+**Batch size** (sizes [784, 128, 64, 10], learning rate 0.1):
+
+| Batch size | Updates per epoch | Mean val accuracy | Range across seeds | Time per run |
+|---|---|---|---|---|
+| **16** | 3,438 | **97.49%** | 97.26% to 97.66% | 7.4s |
+| 64 | 860 | 97.11% | 96.94% to 97.20% | 4.6s |
+| 256 | 215 | 95.60% | 95.46% to 95.68% | 3.4s |
+
+Batch 256 runs fastest per epoch but takes only 215 steps per epoch, so it ends up undertrained. Batch 16 takes 4x the steps of batch 64 for only 1.6x the time, and its range doesn't overlap batch 64's. Smaller batches also take more steps in the same number of epochs, though, so I checked whether batch 16 wins only because it trained longer. Giving batch 64 the same time budget:
+
+| Setup | Mean val accuracy | Range across seeds | Time per run |
+|---|---|---|---|
+| **Batch 16, 5 epochs** | **97.49%** | 97.26% to 97.66% | 7.3s |
+| Batch 64, 8 epochs | 97.17% | 96.42% to 97.60% | 7.3s |
+
+Three extra epochs barely helped batch 64 (97.11% to 97.17%), so batch 16's lead is not just from training longer. The ranges overlap, so with 3 seeds this is "better on average and more consistent," not proven.
+
+**Chosen settings:** [784, 128, 64, 10], learning rate 0.1, batch size 16. `train.py` now uses batch 16. With the seed `train.py` uses, that run reached 96.98% validation accuracy, slightly below the batch 64 run in the first table (97.14%). That's a reminder that one run's final-epoch number moves by a few tenths of a percent from run to run. This is why the comparisons above use averages over several seeds.
+
 ## A note on torchvision
 
 `data.py` uses `torchvision` for one thing only: downloading the raw MNIST files. The data is converted to plain NumPy arrays immediately, and PyTorch is not used anywhere else. The model, forward pass, backpropagation, loss, and training are all written in NumPy.
 
 ## Next steps
 
-- More hyperparameter experiments (batch size, number of epochs) and validation loss curves to show where overfitting starts
+- Validation loss curves to show where overfitting starts and how many epochs to train
 - Final test accuracy, loss and accuracy curves, a confusion matrix, and a look at misclassified digits
 - A PyTorch and CNN version to compare against
 

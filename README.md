@@ -2,7 +2,9 @@
 
 A handwritten digit classifier built with only Python and NumPy. No machine learning frameworks and no automatic differentiation. I'm writing every part by hand so I understand how a neural network actually learns.
 
-## What works so far
+**Final result: 98.32% accuracy on the 10,000-image MNIST test set** (168 mistakes), using a `[784, 128, 64, 10]` ReLU network trained for 20 epochs. The test set was used exactly once, after every setting had been chosen on a separate validation set.
+
+## What works
 
 - Data pipeline: loads MNIST, flattens and normalizes images, and splits the data (`data.py`)
 - Single neuron with sigmoid and ReLU, vectorized and checked by hand (`neuron.py`)
@@ -14,10 +16,23 @@ A handwritten digit classifier built with only Python and NumPy. No machine lear
 - Mini-batch SGD training with per-epoch shuffling, tracking loss and train/validation accuracy (`train.py`)
 - Hyperparameter sweeps over learning rate, hidden layer width, and batch size, each repeated across 3 seeds (`experiments.py`)
 - Loss and accuracy curves over 20 epochs, used to choose the number of epochs (`evaluate.py`)
+- One final test-set evaluation with a hand-built confusion matrix, per-digit accuracy, and a look at the misclassified digits (`evaluate.py`)
 
-## Results so far
+## How to run
 
-A `[784, 128, 64, 10]` ReLU network trained for 5 epochs (batch size 64, learning rate 0.1) reaches **97.1% validation accuracy**:
+```
+python -m venv venv
+venv\Scripts\activate        # Windows; on macOS/Linux: source venv/bin/activate
+pip install numpy matplotlib torchvision
+python gradient_check.py     # backprop vs numerical gradients
+python train.py              # train with the chosen settings
+python experiments.py        # hyperparameter sweeps (a few minutes)
+python evaluate.py           # final training, test score, and all figures
+```
+
+## First training run
+
+My first working setup, a `[784, 128, 64, 10]` ReLU network trained for 5 epochs (batch size 64, learning rate 0.1), reached **97.1% validation accuracy**. It became the baseline for the experiments below:
 
 | Epoch | Loss | Train accuracy | Validation accuracy |
 |---|---|---|---|
@@ -26,8 +41,6 @@ A `[784, 128, 64, 10]` ReLU network trained for 5 epochs (batch size 64, learnin
 | 3 | 0.1111 | 96.69% | 96.02% |
 | 4 | 0.0869 | 97.59% | 96.54% |
 | 5 | 0.0698 | 98.35% | 97.14% |
-
-The test set has not been used yet. It is held back for a single final evaluation.
 
 ## Hyperparameter experiments
 
@@ -88,14 +101,45 @@ Since the goal is accuracy on new digits, I chose 20 epochs, which lands in the 
 
 **Chosen settings:** [784, 128, 64, 10], learning rate 0.1, batch size 16, 20 epochs.
 
+## Test set evaluation
+
+After every setting was fixed, the trained network was scored once on the 10,000 test images:
+
+| Set | Loss | Accuracy |
+|---|---|---|
+| Train | 0.0002 | 100.00% |
+| Validation | 0.0938 | 98.32% |
+| **Test** | **0.0825** | **98.32%** |
+
+Test accuracy matches validation accuracy. Because no decision was made using the test set, this shows the validation score was a fair estimate and choosing settings on it did not overfit to it.
+
+### Confusion matrix
+
+Rows are the true digit and columns are the network's prediction. I built it with a plain loop in NumPy (`confusion_matrix()` in `evaluate.py`) and checked it two ways: it sums to 10,000, and its off-diagonal cells add up to the same 168 mistakes that the accuracy function counts.
+
+![Confusion matrix on the test set](figures/confusion_matrix.png)
+
+- **The most common mistakes are the ones people make too:** 4 → 9 (10) and 9 → 4 (9), then 5 → 3 (7), 9 → 3 (7), and 7 → 2 (6). Mistakes between similar shapes suggest the network learned real stroke patterns rather than something arbitrary.
+- **Per-digit accuracy** ranges from 99.2% for 0 and 1 (a closed loop and a single stroke) down to 97.5% for 5 and 97.1% for 9, the digits involved in the most confusions.
+
+### Misclassified digits
+
+The first 20 mistakes in test-set order (not hand-picked), each with how confident the network was in its wrong answer:
+
+![The first 20 misclassified test digits](figures/misclassified.png)
+
+- **Most are ambiguous handwriting**, like a 4 with a closed top or a 6 that is mostly a loop. A person could misread several of these too.
+- **A few are clear digits it should have gotten right**, such as two readable 9s called 3 and a bold 8 called 2. These are its real weak spots.
+- **It is often very confident when wrong**: 6 of these 20 say 100% sure. This is the same overconfidence seen in the training curves, where validation loss rose after epoch 7 even as accuracy kept improving.
+
 ## A note on torchvision
 
 `data.py` uses `torchvision` for one thing only: downloading the raw MNIST files. The data is converted to plain NumPy arrays immediately, and PyTorch is not used anywhere else. The model, forward pass, backpropagation, loss, and training are all written in NumPy.
 
 ## Next steps
 
-- Final test accuracy, a confusion matrix, and a look at misclassified digits
-- A PyTorch and CNN version to compare against
+- Code cleanup and a short write-up of what I learned
+- A PyTorch and CNN version to compare against. A CNN looks at nearby pixels together, which should help with the shape confusions above (aiming for about 99%)
 
 ## How I use AI
 

@@ -114,5 +114,5 @@ if __name__ == "__main__":
     print(f"loss before training: {cross_entropy_loss(nn.forward(X_train), Y_train):.4f}")
 
     train_losses, val_losses, train_accs, val_accs = train(
-        nn, X_train, Y_train, X_val, Y_val, epochs=5, batch_size=16, learning_rate=0.1
+        nn, X_train, Y_train, X_val, Y_val, epochs=20, batch_size=16, learning_rate=0.1
     )

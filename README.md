@@ -13,6 +13,7 @@ A handwritten digit classifier built with only Python and NumPy. No machine lear
 - Gradient checking with centered finite differences: backprop matches the numerical gradients to a relative error of about 1e-9 (`gradient_check.py`)
 - Mini-batch SGD training with per-epoch shuffling, tracking loss and train/validation accuracy (`train.py`)
 - Hyperparameter sweeps over learning rate, hidden layer width, and batch size, each repeated across 3 seeds (`experiments.py`)
+- Loss and accuracy curves over 20 epochs, used to choose the number of epochs (`evaluate.py`)
 
 ## Results so far
 
@@ -71,7 +72,21 @@ Batch 256 runs fastest per epoch but takes only 215 steps per epoch, so it ends 
 
 Three extra epochs barely helped batch 64 (97.11% to 97.17%), so batch 16's lead is not just from training longer. The ranges overlap, so with 3 seeds this is "better on average and more consistent," not proven.
 
-**Chosen settings:** [784, 128, 64, 10], learning rate 0.1, batch size 16. `train.py` now uses batch 16. With the seed `train.py` uses, that run reached 96.98% validation accuracy, slightly below the batch 64 run in the first table (97.14%). That's a reminder that one run's final-epoch number moves by a few tenths of a percent from run to run. This is why the comparisons above use averages over several seeds.
+**Batch size choice:** batch 16. With the seed `train.py` uses, a 5-epoch run at batch 16 reached 96.98% validation accuracy, slightly below the batch 64 run in the first table (97.14%). That's a reminder that one run's final-epoch number moves by a few tenths of a percent from run to run. This is why the comparisons above use averages over several seeds.
+
+## Training curves and number of epochs
+
+To choose how long to train, `evaluate.py` trains the chosen network for 20 epochs and plots loss and accuracy on the training and validation sets after every epoch:
+
+![Training and validation loss and accuracy over 20 epochs](figures/training_curves.png)
+
+- **Overfitting is visible in the loss.** Validation loss is lowest at epoch 7 (0.083) and then creeps up, while training loss falls to nearly 0. By epoch 16 the network gets 100% of the training images right: it has memorized them.
+- **Validation accuracy still improves anyway**, from 97.86% at epoch 7 to about 98.3% from epoch 16 on. The network gets more images right overall but becomes very confident on the few it still gets wrong, and cross-entropy punishes confident mistakes heavily. So loss and accuracy disagree about when to stop.
+- **The spikes at epochs 12 and 15** look like bad steps from a learning rate that's a bit high for batch 16. After epoch 16 the gradients are close to 0, so the curves flatten.
+
+Since the goal is accuracy on new digits, I chose 20 epochs, which lands in the flat, stable stretch rather than on one lucky epoch. This comes from a single seed, so the exact best epoch would move a little with another seed.
+
+**Chosen settings:** [784, 128, 64, 10], learning rate 0.1, batch size 16, 20 epochs.
 
 ## A note on torchvision
 
@@ -79,8 +94,7 @@ Three extra epochs barely helped batch 64 (97.11% to 97.17%), so batch 16's lead
 
 ## Next steps
 
-- Validation loss curves to show where overfitting starts and how many epochs to train
-- Final test accuracy, loss and accuracy curves, a confusion matrix, and a look at misclassified digits
+- Final test accuracy, a confusion matrix, and a look at misclassified digits
 - A PyTorch and CNN version to compare against
 
 ## How I use AI

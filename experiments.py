@@ -48,17 +48,18 @@ def run_experiment(X_train, Y_train, X_val, Y_val, layer_sizes, learning_rate,
         Same seed + same settings = the exact same result.
 
     Returns:
-    dict: per-epoch losses/train_accs/val_accs, and seconds taken.
+    dict: per-epoch train_losses/val_losses/train_accs/val_accs, and seconds taken.
     """
     nn = network.NeuralNetwork(layer_sizes, seed=seed)
     start = time.perf_counter()
-    losses, train_accs, val_accs = train(
+    train_losses, val_losses, train_accs, val_accs = train(
         nn, X_train, Y_train, X_val, Y_val,
         epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
         seed=seed, verbose=False,
     )
     return {
-        "losses": losses,
+        "train_losses": train_losses,
+        "val_losses": val_losses,
         "train_accs": train_accs,
         "val_accs": val_accs,
         "seconds": time.perf_counter() - start,

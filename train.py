@@ -60,10 +60,10 @@ def train(nn, X_train, Y_train, X_val, Y_val, epochs, batch_size, learning_rate,
     """
     Train the network for several epochs, reshuffling the data each epoch.
 
-    After each epoch, prints the loss and the accuracy on both the training
-    set and the validation set. The validation set is never trained on, so
-    it shows how well the network does on new images (and reveals
-    overfitting when train accuracy keeps rising but validation doesn't).
+    After each epoch, measures loss and accuracy on both the training set
+    and the validation set. The validation set is never trained on, so it
+    shows how well the network does on new images. Overfitting shows up as
+    val loss rising while train loss keeps falling.
 
     Parameters:
     nn (NeuralNetwork): The network to train (updated in place).
@@ -77,26 +77,29 @@ def train(nn, X_train, Y_train, X_val, Y_val, epochs, batch_size, learning_rate,
     verbose (bool): If True, print a line after every epoch.
 
     Returns:
-    tuple of lists, one entry per epoch: (losses, train_accs, val_accs)
+    tuple of lists, one entry per epoch:
+        (train_losses, val_losses, train_accs, val_accs)
     """
     rng = np.random.default_rng(seed)
-    losses, train_accs, val_accs = [], [], []
+    train_losses, val_losses, train_accs, val_accs = [], [], [], []
     for epoch in range(epochs):
         # One shared order for X and Y, so every image keeps its own label
         indices = rng.permutation(len(X_train))
         X_shuffle, Y_shuffle = X_train[indices], Y_train[indices]
 
-        avg_loss = train_one_epoch(nn, X_shuffle, Y_shuffle, batch_size, learning_rate)
-        train_acc = accuracy(nn, X_train, Y_train)
-        val_acc = accuracy(nn, X_val, Y_val)
+        train_one_epoch(nn, X_shuffle, Y_shuffle, batch_size, learning_rate)
 
-        losses.append(avg_loss)
-        train_accs.append(train_acc)
-        val_accs.append(val_acc)
+        # Measure both sets with the finished network for this epoch, so train
+        # and val numbers are directly comparable
+        train_losses.append(cross_entropy_loss(nn.forward(X_train), Y_train))
+        val_losses.append(cross_entropy_loss(nn.forward(X_val), Y_val))
+        train_accs.append(accuracy(nn, X_train, Y_train))
+        val_accs.append(accuracy(nn, X_val, Y_val))
         if verbose:
-            print(f"Epoch {epoch + 1}: loss {avg_loss:.4f}, "
-                  f"train acc {train_acc:.2%}, val acc {val_acc:.2%}")
-    return losses, train_accs, val_accs
+            print(f"Epoch {epoch + 1}: "
+                  f"train loss {train_losses[-1]:.4f}, val loss {val_losses[-1]:.4f}, "
+                  f"train acc {train_accs[-1]:.2%}, val acc {val_accs[-1]:.2%}")
+    return train_losses, val_losses, train_accs, val_accs
 
 
 if __name__ == "__main__":
@@ -110,6 +113,6 @@ if __name__ == "__main__":
     # Untrained baseline: should be about 2.30 (= -log(1/10), a uniform guess)
     print(f"loss before training: {cross_entropy_loss(nn.forward(X_train), Y_train):.4f}")
 
-    losses, train_accs, val_accs = train(
+    train_losses, val_losses, train_accs, val_accs = train(
         nn, X_train, Y_train, X_val, Y_val, epochs=5, batch_size=16, learning_rate=0.1
     )

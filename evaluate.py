@@ -15,9 +15,9 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
 
+import activations
 import data
 import network
-import neuron
 from losses import cross_entropy_loss
 from train import accuracy, train
 
@@ -260,7 +260,7 @@ if __name__ == "__main__":
     print(f"{'test':>12} | {test_loss:>6.4f} | {test_acc:>8.2%}")
     print(f"\nTest: {n_wrong} of {len(Y_test)} images wrong")
 
-    probs = neuron.softmax(nn.forward(X_test))
+    probs = activations.softmax(nn.forward(X_test))
     predictions = np.argmax(probs, axis=1)
     confidences = np.max(probs, axis=1)  # how sure the network was of its answer
     matrix = confusion_matrix(predictions, Y_test)
@@ -299,4 +299,3 @@ if __name__ == "__main__":
     path = os.path.join(FIGURE_DIR, "misclassified.png")
     plot_misclassified(X_test, Y_test, predictions, confidences, wrong[:20], path)
     print(f"Saved {path}")
-

@@ -1,5 +1,13 @@
+"""
+Cross-entropy loss computed from logits (numerically stable log-softmax), and
+its gradient with respect to the logits.
+
+Run directly to run the self-tests: python losses.py
+"""
 import numpy as np
-import neuron
+
+import activations
+
 
 def cross_entropy_loss(logits, y):
     """
@@ -20,6 +28,7 @@ def cross_entropy_loss(logits, y):
     loss = -np.mean(correct_log_probs)
     return loss
 
+
 def cross_entropy_grad(logits, y):
     """
     Compute the gradient of the cross-entropy loss with respect to the logits.
@@ -31,11 +40,12 @@ def cross_entropy_grad(logits, y):
     Returns:
     numpy.ndarray: Gradient of the loss with respect to the logits, shape (B, C).
     """
-    probs = neuron.softmax(logits)  # softmax returns a new array, so logits is untouched
+    probs = activations.softmax(logits)  # softmax returns a new array, so logits is untouched
     B = logits.shape[0]
     probs[np.arange(B), y] -= 1     # probs - onehot: subtract 1 only at each correct label
     grad = probs / B                # loss is a mean over the batch, so scale by 1/B
     return grad
+
 
 if __name__ == "__main__":
 
@@ -69,7 +79,7 @@ if __name__ == "__main__":
     B = 8
     logits_rand = rng.standard_normal((B, 10)) * 3
     y_rand = rng.integers(0, 10, size=B)
-    naive = -np.mean(np.log(neuron.softmax(logits_rand)[np.arange(B), y_rand]))
+    naive = -np.mean(np.log(activations.softmax(logits_rand)[np.arange(B), y_rand]))
     ours = cross_entropy_loss(logits_rand, y_rand)
     assert np.isclose(ours, naive), f"log-softmax {ours} != naive {naive}"
     print(f"matches naive softmax -> log: {ours:.6f} vs {naive:.6f} OK")

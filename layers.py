@@ -1,7 +1,23 @@
+"""
+DenseLayer: a fully connected layer with its forward pass and backpropagation.
+
+Run directly to run the self-tests: python layers.py
+"""
 import numpy as np
-import neuron
+
+import activations
+
 
 class DenseLayer:
+    """
+    A fully connected layer: every input connects to every neuron.
+
+    forward() computes Z = inputs @ weights + biases for the whole batch at
+    once, then applies the activation (or returns Z unchanged for the output
+    layer). It caches the inputs and Z, which backward() needs to compute
+    grad_weights, grad_biases, and the gradient passed to the previous layer.
+    """
+
     def __init__(self, input_dim, output_dim, rng, activation=None):
         """
         Initialize a layer with weights, biases, and an optional activation function.
@@ -47,8 +63,8 @@ class DenseLayer:
         """
         if self.activation is None:
             dZ = dA
-        elif self.activation == neuron.relu:
-            dZ = np.multiply(neuron.relu_derivative(self.Z),dA)
+        elif self.activation == activations.relu:
+            dZ = np.multiply(activations.relu_derivative(self.Z),dA)
         else:
             # Fail loudly instead of a confusing UnboundLocalError on dZ below
             raise ValueError(f"no derivative known for activation {self.activation}")
@@ -57,14 +73,15 @@ class DenseLayer:
         self.grad_A_inputs = np.dot(dZ,self.weights.T)
         return self.grad_A_inputs
 
+
 if __name__ == "__main__":
     # One shared generator for the whole test: reproducible, but each layer
     # draws different numbers from it.
     rng = np.random.default_rng(seed=42)
     X = rng.random((5, 784))  # fake batch: 5 "images", 784 pixels each
 
-    l1 = DenseLayer(784, 128, rng, neuron.relu)
-    l2 = DenseLayer(128, 128, rng, neuron.relu)
+    l1 = DenseLayer(784, 128, rng, activations.relu)
+    l2 = DenseLayer(128, 128, rng, activations.relu)
 
     # Shape check: (5, 784) @ (784, 128) -> (5, 128)
     out1 = l1.forward(X)
@@ -117,7 +134,7 @@ if __name__ == "__main__":
 
     # ReLU blocks gradient for "off" neurons: inputs [1, 2] give Z = [3, -3],
     # so neuron 1 (Z < 0) has slope 0 and gets an all-zero grad_weights column
-    gate = DenseLayer(2, 2, rng, neuron.relu)
+    gate = DenseLayer(2, 2, rng, activations.relu)
     gate.weights = np.array([[1.0, -1.0], [1.0, -1.0]])
     gate.forward(np.array([[1.0, 2.0]]))
     gate.backward(np.array([[1.0, 1.0]]))

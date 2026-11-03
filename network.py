@@ -1,8 +1,25 @@
-from layers import DenseLayer
-import neuron
+"""
+NeuralNetwork: a stack of DenseLayers with forward and backward passes.
+
+Run directly to run the self-tests: python network.py
+"""
 import numpy as np
+
+import activations
+from layers import DenseLayer
 from losses import cross_entropy_grad
+
+
 class NeuralNetwork:
+    """
+    A list of DenseLayers run in order: ReLU on every hidden layer, raw
+    scores (logits) from the last one.
+
+    forward() passes a batch through each layer in turn; backward() starts
+    from the softmax + cross-entropy gradient and walks the layers in reverse,
+    leaving grad_weights and grad_biases on every layer for the SGD update.
+    """
+
     def __init__(self, layer_sizes, seed=42):
         """
         Build a stack of DenseLayers from a list of layer sizes.
@@ -20,7 +37,7 @@ class NeuralNetwork:
         layers = []
         for i in range(len(layer_sizes) - 1):
             is_last_layer = (i == len(layer_sizes) - 2)
-            activation_function = None if is_last_layer else neuron.relu
+            activation_function = None if is_last_layer else activations.relu
             layers.append(DenseLayer(layer_sizes[i], layer_sizes[i + 1], rng, activation_function))
         self.layers = layers
     def forward(self, X):
@@ -59,8 +76,6 @@ class NeuralNetwork:
             grads = layer.backward(grads)
 
 
-
-
 if __name__ == "__main__":
     # Example usage
     layer_sizes = [784, 128, 64, 10]  # Example architecture for MNIST
@@ -80,7 +95,7 @@ if __name__ == "__main__":
     print("layer weight shapes OK")
 
     # ReLU on hidden layers, no activation (raw logits) on the output layer
-    assert all(layer.activation is neuron.relu for layer in nn.layers[:-1]), "hidden layer missing relu"
+    assert all(layer.activation is activations.relu for layer in nn.layers[:-1]), "hidden layer missing relu"
     assert nn.layers[-1].activation is None, "output layer should have no activation"
     print("activations OK (relu hidden, None output)")
 

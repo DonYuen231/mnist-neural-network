@@ -7,8 +7,8 @@ A handwritten digit classifier built with only Python and NumPy. No machine lear
 ## What works
 
 - Data pipeline: loads MNIST, flattens and normalizes images, and splits the data (`data.py`)
-- Single neuron with sigmoid and ReLU, vectorized and checked by hand (`neuron.py`)
-- Numerically stable softmax with self-tests
+- Single neuron with sigmoid and ReLU, vectorized and checked by hand (`activations.py`)
+- Numerically stable softmax with self-tests (`activations.py`)
 - Layers and a full forward pass using He initialization (`layers.py`, `network.py`)
 - Cross-entropy loss using log-softmax, stable for extreme values (`losses.py`)
 - Backpropagation through every layer, derived by hand with the chain rule (`layers.py`, `network.py`)
@@ -23,7 +23,7 @@ A handwritten digit classifier built with only Python and NumPy. No machine lear
 ```
 python -m venv venv
 venv\Scripts\activate        # Windows; on macOS/Linux: source venv/bin/activate
-pip install numpy matplotlib torchvision
+pip install -r requirements.txt
 python gradient_check.py     # backprop vs numerical gradients
 python train.py              # train with the chosen settings
 python experiments.py        # hyperparameter sweeps (a few minutes)

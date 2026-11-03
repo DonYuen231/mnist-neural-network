@@ -1,6 +1,13 @@
+"""
+Activation functions and their derivatives: sigmoid, ReLU, and softmax.
+
+Also contains neuron_calculate(), the single-neuron demo from Part 2 (a weighted
+sum followed by sigmoid). The network does not use it; it is kept as the
+hand-checkable starting point the layers were built from.
+
+Run directly to run the self-tests: python activations.py
+"""
 import numpy as np
-
-
 
 
 def sigmoid(z):
@@ -21,7 +28,6 @@ def sigmoid(z):
     return out
 
 
-
 def sigmoid_derivative(z):
     """
     Calculate the derivative of the sigmoid activation function.
@@ -34,6 +40,7 @@ def sigmoid_derivative(z):
     """
     s = sigmoid(z)
     return s * (1 - s)
+
 
 def relu_derivative(z):
     """
@@ -50,6 +57,7 @@ def relu_derivative(z):
     out[z > 0] = 1
     out[z <= 0] = 0
     return out
+
 
 def relu(z):
     """
@@ -85,6 +93,7 @@ def neuron_calculate(inputs, weights, bias):
     # Apply the activation function
     return sigmoid(weighted_sum)
 
+
 def softmax(z):
     """
     Apply the softmax activation function.
@@ -98,6 +107,7 @@ def softmax(z):
     z = np.asarray(z, dtype=float)
     exp_z = np.exp(z - np.max(z, axis=1, keepdims=True))  # Subtract max for numerical stability
     return exp_z / np.sum(exp_z, axis=1, keepdims=True)
+
 
 if __name__ == "__main__":
     # Hand-computed check:
@@ -158,4 +168,4 @@ if __name__ == "__main__":
     assert np.array_equal(probs.argmax(axis=1), logits.argmax(axis=1)), "argmax changed"
     print("softmax batch (5, 10): rows sum to 1, all > 0, argmax preserved OK")
 
-    print("\nAll neuron.py checks passed.")
+    print("\nAll activations.py checks passed.")

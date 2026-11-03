@@ -1,6 +1,13 @@
+"""
+Mini-batch SGD training: one epoch of updates, accuracy, and the full
+training loop with per-epoch shuffling and train/validation tracking.
+
+Run directly to train with the chosen settings: python train.py
+"""
 import numpy as np
-import network
+
 import data
+import network
 from losses import cross_entropy_loss
 
 

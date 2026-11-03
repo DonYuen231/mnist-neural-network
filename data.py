@@ -1,6 +1,14 @@
-import torchvision
-import numpy as np
+"""
+MNIST data pipeline: download, flatten and scale to [0, 1], split off a
+validation set, and plot sample digits.
+
+torchvision is used only to download the raw files; everything after that is
+plain NumPy.
+"""
 import matplotlib.pyplot as plt
+import numpy as np
+import torchvision
+
 
 def load_mnist():
     """
@@ -24,6 +32,7 @@ def load_mnist():
     Y_test = test_dataset.targets.numpy()
     return X_train, Y_train, X_test, Y_test
 
+
 def verify_data(X_train, Y_train, X_test, Y_test):
     """
     Print shapes, dtypes, and pixel min/max as a quick sanity check.
@@ -45,7 +54,6 @@ def verify_data(X_train, Y_train, X_test, Y_test):
     print(X_test.min(), X_test.max())
 
 
-
 def preprocess_data(X_train, X_test):
     """
     Flatten each image to a row of 784 pixels and scale pixels to [0, 1].
@@ -60,6 +68,8 @@ def preprocess_data(X_train, X_test):
     X_train = X_train.reshape(X_train.shape[0], -1).astype('float32') / 255.0
     X_test = X_test.reshape(X_test.shape[0], -1).astype('float32') / 255.0
     return X_train, X_test
+
+
 def split_data(X, Y, train_ratio=0.9167):
     """
     Shuffle the samples and split them into a training set and a validation set.
@@ -86,6 +96,7 @@ def split_data(X, Y, train_ratio=0.9167):
     X_val, Y_val = X[val_indices], Y[val_indices]
     return X_train, Y_train, X_val, Y_val
 
+
 def plot_samples(X, Y, n=10, save_path='sample_digits.png'):
     """
     Save a row of the first n images, each titled with its label.
@@ -109,6 +120,7 @@ def plot_samples(X, Y, n=10, save_path='sample_digits.png'):
     plt.tight_layout()
     plt.savefig(save_path)
     print(f"Saved sample plot to {save_path}")
+
 
 if __name__ == "__main__":
     X_train, Y_train, X_test, Y_test = load_mnist()

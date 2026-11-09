@@ -132,6 +132,23 @@ The first 20 mistakes in test-set order (not hand-picked), each with how confide
 - **A few are clear digits it should have gotten right**, such as two readable 9s called 3 and a bold 8 called 2. These are its real weak spots.
 - **It is often very confident when wrong**: 6 of these 20 say 100% sure. This is the same overconfidence seen in the training curves, where validation loss rose after epoch 7 even as accuracy kept improving.
 
+## Exporting the model for the website
+
+My portfolio site runs this same network in TypeScript in the browser. To export it:
+
+```
+python evaluate.py        # trains the final model and saves model_params.npz
+python export_weights.py  # writes export/ and verifies it
+```
+
+`export_weights.py` writes three files to `export/`:
+
+- `weights.bin`: W1, b1, W2, b2, W3, b3 as little-endian float32, each row-major, in that order (109,386 values).
+- `model.json`: layer sizes, learning rate, test accuracy, the input normalization (`x / 255.0`, 0 = background, 1 = ink), the forward formula (`x @ W + b`), and the shape of each array in `weights.bin`.
+- `fixtures.json`: values from Python that the site's tests compare against: softmax outputs for 20 test images (2 per digit); the loss, 200 sampled gradients, and the logits and probabilities after one SGD step for one test image; and one clear sample image per digit.
+
+All fixture values are computed in float64 from the float32 weights, so they match exactly what the site loads. After writing, the script reads `weights.bin` back with `np.fromfile`, confirms it reproduces the 98.32% test accuracy and every fixture, and checks the sampled gradients against finite differences.
+
 ## A note on torchvision
 
 `data.py` uses `torchvision` for one thing only: downloading the raw MNIST files. The data is converted to plain NumPy arrays immediately, and PyTorch is not used anywhere else. The model, forward pass, backpropagation, loss, and training are all written in NumPy.

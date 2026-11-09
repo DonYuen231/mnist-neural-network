@@ -29,6 +29,7 @@ BATCH_SIZE = 16
 CURVE_EPOCHS = 20
 
 FIGURE_DIR = "figures"
+PARAMS_PATH = "model_params.npz"
 
 # Colors: blue for train, orange for validation, quiet gray text and grid
 TRAIN_COLOR = "#2a78d6"
@@ -259,6 +260,15 @@ if __name__ == "__main__":
     print(f"{'validation':>12} | {val_losses[-1]:>6.4f} | {val_accs[-1]:>8.2%}")
     print(f"{'test':>12} | {test_loss:>6.4f} | {test_acc:>8.2%}")
     print(f"\nTest: {n_wrong} of {len(Y_test)} images wrong")
+
+    # Save the trained parameters so export_weights.py can use them without
+    # retraining. Names follow the layers: W1/b1 is 784->128, W3/b3 is 64->10.
+    params = {}
+    for i, layer in enumerate(nn.layers, start=1):
+        params[f"W{i}"] = layer.weights
+        params[f"b{i}"] = layer.biases
+    np.savez(PARAMS_PATH, **params)
+    print(f"Saved trained parameters to {PARAMS_PATH}")
 
     probs = activations.softmax(nn.forward(X_test))
     predictions = np.argmax(probs, axis=1)

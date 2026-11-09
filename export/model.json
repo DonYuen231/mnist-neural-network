@@ -1,0 +1,59 @@
+{
+  "version": "2026-11-09-ae8f1bc",
+  "layers": [
+    784,
+    128,
+    64,
+    10
+  ],
+  "activation": "relu",
+  "output": "softmax",
+  "loss": "cross-entropy",
+  "learningRate": 0.1,
+  "batchSize": 16,
+  "testAccuracy": 0.9832,
+  "normalization": "x / 255.0, range [0,1]; 28x28 image flattened row-major (row 0 left to right, then row 1, ...); 0 = background (black), 1 = ink (white)",
+  "forward": "x @ W + b",
+  "dtype": "float32 little-endian",
+  "order": [
+    {
+      "name": "W1",
+      "shape": [
+        784,
+        128
+      ]
+    },
+    {
+      "name": "b1",
+      "shape": [
+        128
+      ]
+    },
+    {
+      "name": "W2",
+      "shape": [
+        128,
+        64
+      ]
+    },
+    {
+      "name": "b2",
+      "shape": [
+        64
+      ]
+    },
+    {
+      "name": "W3",
+      "shape": [
+        64,
+        10
+      ]
+    },
+    {
+      "name": "b3",
+      "shape": [
+        10
+      ]
+    }
+  ]
+}
